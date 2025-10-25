@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👻 ばけばけ展示館（16:10版）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0f0a1a;
+            color: #bb88ff;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(187, 136, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(150, 100, 200, 0.15) 0%, transparent 50%);
+            animation: wave 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        @keyframes wave {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(5%, 5%) rotate(1deg); }
+            50% { transform: translate(-3%, 3%) rotate(-1deg); }
+            75% { transform: translate(3%, -5%) rotate(0.5deg); }
+        }
+        
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(187, 136, 255, 0.03) 0px,
+                transparent 2px,
+                transparent 4px
+            );
+            pointer-events: none;
+            z-index: 9999;
+        }
+        
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            text-align: center;
+            padding: 20px;
+            background: rgba(15, 10, 26, 0.9);
+            border-bottom: 2px solid #bb88ff;
+            box-shadow: 0 5px 20px rgba(187, 136, 255, 0.3);
+        }
+        
+        h1 {
+            font-size: 48px;
+            text-shadow: 0 0 10px #bb88ff, 0 0 20px #bb88ff, 0 0 40px #bb88ff;
+            letter-spacing: 8px;
+            animation: flicker 3s infinite;
+            margin-bottom: 10px;
+        }
+        
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.97; }
+        }
+        
+        .subtitle { 
+            font-size: 12px; 
+            color: #00cc70; 
+            letter-spacing: 2px; 
+        }
+        
+        .control-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: rgba(20, 10, 30, 0.95);
+            border: 2px solid #bb88ff;
+            border-radius: 10px;
+            padding: 12px;
+            width: 600px;
+            box-shadow: 0 0 20px rgba(187, 136, 255, 0.3);
+        }
+        
+        .section-title {
+            font-size: 14px;
+            color: #bb88ff;
+            border-bottom: 2px solid #bb88ff;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px #bb88ff;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 10px;
+            background: linear-gradient(135deg, #bb88ff 0%, #9966cc 100%);
+            color: #0f0a1a;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        button:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 5px 15px rgba(187, 136, 255, 0.5); 
+        }
+        
+        
+        .status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #bb88ff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #bb88ff;
+            animation: blink 2s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .gallery {
+            position: fixed;
+            top: 120px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+        
+        .floating-monster {
+            position: absolute;
+            width: 240px;
+            height: 150px;
+            border: 2px solid #bb88ff;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(187, 136, 255, 0.5);
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            animation: float 20s ease-in-out infinite;
+            background-size: cover;
+            background-position: center;
+            background-color: rgba(20, 10, 30, 0.8);
+        }
+        
+        .floating-monster:hover {
+            transform: scale(1.1) !important;
+            box-shadow: 0 0 40px rgba(187, 136, 255, 0.8);
+            z-index: 100;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(30px, -30px) rotate(5deg); }
+            50% { transform: translate(-20px, 20px) rotate(-5deg); }
+            75% { transform: translate(20px, -10px) rotate(3deg); }
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border: 3px solid #bb88ff;
+            border-radius: 10px;
+            box-shadow: 0 0 50px rgba(187, 136, 255, 0.8);
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 24px;
+            display: none;
+            z-index: 1500;
+        }
+        
+        .debug-btn {
+            background: linear-gradient(135deg, #ff6600 0%, #ff4400 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="scanline"></div>
+    
+    <header>
+        <h1>👻 ばけばけ展示館 👻</h1>
+    </header>
+
+    <div class="control-panel">
+        <div class="button-group">
+            <button onclick="loadFromCloud()">📥 読み込む</button>
+            <button onclick="clearGallery()">🗑️ クリア</button>
+            <button class="debug-btn" onclick="showDebugInfo()">🔍 デバッグ</button>
+        </div>
+        
+        <div class="status">
+            <div class="status-dot"></div>
+            <span id="statusText">待機中</span>
+        </div>
+    </div>
+
+    <div class="gallery" id="gallery"></div>
+    
+    <div class="loading" id="loading">
+        <div>👾 読み込み中... 👾</div>
+    </div>
+    
+    <div class="modal" id="modal" onclick="closeModal()">
+        <img id="modalImage" alt="拡大表示">
+    </div>
+
+    <script>
+        let monsters = [];
+        
+        function loadFromCloud() {
+            console.log('=== 読み込み開始 ===');
+            document.getElementById('loading').style.display = 'block';
+            
+            try {
+                const savedUrls = JSON.parse(localStorage.getItem('monster_urls') || '[]');
+                console.log('LocalStorageから取得:', savedUrls);
+                console.log('保存されているお化けの数:', savedUrls.length);
+                
+                if (savedUrls.length === 0) {
+                    const message = 'LocalStorageにお化けが保存されていません。\n\n【確認事項】\n1. 生成アプリで画像を保存しましたか？\n2. 生成アプリと展示館アプリは同じブラウザで開いていますか？\n3. 両方のHTMLファイルは同じフォルダにありますか？';
+                    alert(message);
+                    console.warn(message);
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('statusText').textContent = '待機中';
+                    return;
+                }
+                
+                monsters = savedUrls;
+                console.log('表示するお化け:', monsters);
+                displayMonsters();
+                
+                document.getElementById('statusText').textContent = `${monsters.length}体のお化けを展示中`;
+                
+            } catch (error) {
+                console.error('読み込みエラー:', error);
+                alert('読み込みエラー: ' + error.message);
+                document.getElementById('statusText').textContent = 'エラー';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        function displayMonsters() {
+            console.log('=== 表示開始 ===');
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+            
+            monsters.forEach((monster, index) => {
+                console.log(`お化け${index + 1}:`, monster);
+                
+                const div = document.createElement('div');
+                div.className = 'floating-monster';
+                
+                const randomX = Math.random() * (window.innerWidth - 260);
+                const randomY = Math.random() * (window.innerHeight - 300) + 150;
+                div.style.left = randomX + 'px';
+                div.style.top = randomY + 'px';
+                
+                div.style.animationDelay = (Math.random() * 10) + 's';
+                div.style.animationDuration = (15 + Math.random() * 10) + 's';
+                
+                div.style.backgroundImage = `url(${monster.url})`;
+                div.title = monster.name || '妖怪';
+                
+                div.onclick = () => showModal(monster.url);
+                
+                // 画像読み込みエラーのハンドリング
+                const img = new Image();
+                img.onload = () => {
+                    console.log(`お化け${index + 1}の画像読み込み成功:`, monster.url);
+                };
+                img.onerror = () => {
+                    console.error(`お化け${index + 1}の画像読み込み失敗:`, monster.url);
+                    div.style.backgroundImage = 'none';
+                    div.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ff6666;text-align:center;font-size:12px;padding:10px;">❌<br>読込失敗</div>';
+                };
+                img.src = monster.url;
+                
+                gallery.appendChild(div);
+            });
+            
+            console.log(`${monsters.length}体のお化けを配置完了`);
+        }
+        
+        function showModal(imageUrl) {
+            document.getElementById('modalImage').src = imageUrl;
+            document.getElementById('modal').style.display = 'flex';
+        }
+        
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+        
+        function clearGallery() {
+            if (confirm('ギャラリーをクリアしますか？\n（LocalStorageのお化けリストは残ります）')) {
+                document.getElementById('gallery').innerHTML = '';
+                monsters = [];
+                document.getElementById('statusText').textContent = '待機中';
+            }
+        }
+        
+        function showDebugInfo() {
+            console.log('=== デバッグ情報 ===');
+            const savedUrls = JSON.parse(localStorage.getItem('monster_urls') || '[]');
+            
+            const info = `
+【デバッグ情報】
+保存されているお化け数: ${savedUrls.length}体
+
+LocalStorageのキー: monster_urls
+データ: ${localStorage.getItem('monster_urls') ? 'あり' : 'なし'}
+
+URL一覧:
+${savedUrls.map((m, i) => `${i + 1}. ${m.name}\n   ${m.url.substring(0, 50)}...`).join('\n')}
+
+【確認事項】
+✓ このHTMLと生成アプリのHTMLは同じフォルダにありますか？
+✓ 同じブラウザで開いていますか？
+✓ プライベートブラウズモードではありませんか？
+            `;
+            
+            console.log(info);
+            alert(info);
+        }
+        
+        // 自動読み込み
+        window.addEventListener('load', () => {
+            console.log('=== ページ読み込み完了 ===');
+            const savedUrls = JSON.parse(localStorage.getItem('monster_urls') || '[]');
+            console.log('LocalStorageの確認:', savedUrls.length, '体');
+            
+            if (savedUrls.length > 0) {
+                console.log('自動読み込み実行');
+                loadFromCloud();
+            } else {
+                console.log('保存されたお化けなし');
+                document.getElementById('statusText').textContent = '待機中（お化けなし）';
+            }
+        });
+    </script>
+</body>
+</html>

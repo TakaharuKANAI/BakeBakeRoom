@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>👻 ばけばけ展示館（16:10版）</title>
+    <title>👻 ばけばけ展示館（Firebase版）</title>
     <style>
         * {
             margin: 0;
@@ -84,12 +84,6 @@
             50% { opacity: 0.97; }
         }
         
-        .subtitle { 
-            font-size: 12px; 
-            color: #00cc70; 
-            letter-spacing: 2px; 
-        }
-        
         .control-panel {
             position: fixed;
             bottom: 20px;
@@ -102,15 +96,6 @@
             padding: 12px;
             width: 600px;
             box-shadow: 0 0 20px rgba(187, 136, 255, 0.3);
-        }
-        
-        .section-title {
-            font-size: 14px;
-            color: #bb88ff;
-            border-bottom: 2px solid #bb88ff;
-            padding-bottom: 6px;
-            margin-bottom: 10px;
-            text-shadow: 0 0 10px #bb88ff;
         }
         
         .button-group {
@@ -137,7 +122,6 @@
             transform: translateY(-2px); 
             box-shadow: 0 5px 15px rgba(187, 136, 255, 0.5); 
         }
-        
         
         .status {
             display: flex;
@@ -234,6 +218,19 @@
         .debug-btn {
             background: linear-gradient(135deg, #ff6600 0%, #ff4400 100%);
         }
+
+        .firebase-indicator {
+            position: fixed;
+            top: 90px;
+            right: 20px;
+            background: rgba(20, 10, 30, 0.9);
+            border: 2px solid #bb88ff;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 11px;
+            z-index: 1000;
+            box-shadow: 0 0 15px rgba(187, 136, 255, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -242,6 +239,10 @@
     <header>
         <h1>👻 ばけばけ展示館 👻</h1>
     </header>
+
+    <div class="firebase-indicator" id="firebaseIndicator">
+        🔥 Firebase: 接続確認中...
+    </div>
 
     <div class="control-panel">
         <div class="button-group">
@@ -266,36 +267,84 @@
         <img id="modalImage" alt="拡大表示">
     </div>
 
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // ========================================
+        // 🔥 Firebase設定（生成アプリと同じ設定を使用）
+        // ========================================
+        const firebaseConfig = {
+          apiKey: "AIzaSyBwl3fDVTTHpvyYn9fP-AgKVo-bjGZfAK0",
+          authDomain: "bakebake-garalley.firebaseapp.com",
+          databaseURL: "https://bakebake-garalley-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "bakebake-garalley",
+          storageBucket: "bakebake-garalley.firebasestorage.app",
+          messagingSenderId: "215696593569",
+          appId: "1:215696593569:web:35dffc96aae1cb186896e0"
+        };
+
+        // Firebase初期化
+        let app, database;
+        try {
+            app = initializeApp(firebaseConfig);
+            database = getDatabase(app);
+            document.getElementById('firebaseIndicator').textContent = '🔥 Firebase: 接続成功';
+            document.getElementById('firebaseIndicator').style.borderColor = '#bb88ff';
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            document.getElementById('firebaseIndicator').textContent = '🔥 Firebase: 接続エラー';
+            document.getElementById('firebaseIndicator').style.borderColor = '#ff6666';
+            console.error('Firebase initialization error:', error);
+        }
+
+        // グローバルに公開
+        window.firebaseDB = database;
+        window.firebaseRef = ref;
+        window.firebaseOnValue = onValue;
+        window.firebaseGet = get;
+    </script>
+
     <script>
         let monsters = [];
         
-        function loadFromCloud() {
-            console.log('=== 読み込み開始 ===');
+        async function loadFromCloud() {
+            console.log('=== Firebase読み込み開始 ===');
+            
+            if (!window.firebaseDB) {
+                alert('Firebaseに接続されていません。設定を確認してください。');
+                return;
+            }
+
             document.getElementById('loading').style.display = 'block';
+            document.getElementById('statusText').textContent = '読み込み中...';
             
             try {
-                const savedUrls = JSON.parse(localStorage.getItem('monster_urls') || '[]');
-                console.log('LocalStorageから取得:', savedUrls);
-                console.log('保存されているお化けの数:', savedUrls.length);
+                const monstersRef = window.firebaseRef(window.firebaseDB, 'monsters');
+                const snapshot = await window.firebaseGet(monstersRef);
                 
-                if (savedUrls.length === 0) {
-                    const message = 'LocalStorageにお化けが保存されていません。\n\n【確認事項】\n1. 生成アプリで画像を保存しましたか？\n2. 生成アプリと展示館アプリは同じブラウザで開いていますか？\n3. 両方のHTMLファイルは同じフォルダにありますか？';
-                    alert(message);
-                    console.warn(message);
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('statusText').textContent = '待機中';
-                    return;
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    monsters = Object.keys(data).map(key => ({
+                        id: key,
+                        ...data[key]
+                    }));
+                    
+                    console.log('Firebaseから取得:', monsters);
+                    console.log('お化けの数:', monsters.length);
+                    
+                    displayMonsters();
+                    document.getElementById('statusText').textContent = `${monsters.length}体のお化けを展示中`;
+                } else {
+                    console.log('データが存在しません');
+                    alert('まだお化けが保存されていません。\n生成アプリで妖怪を召喚して保存してください。');
+                    document.getElementById('statusText').textContent = '待機中（お化けなし）';
                 }
-                
-                monsters = savedUrls;
-                console.log('表示するお化け:', monsters);
-                displayMonsters();
-                
-                document.getElementById('statusText').textContent = `${monsters.length}体のお化けを展示中`;
                 
             } catch (error) {
                 console.error('読み込みエラー:', error);
-                alert('読み込みエラー: ' + error.message);
+                alert('読み込みエラー: ' + error.message + '\n\nFirebaseの設定を確認してください。');
                 document.getElementById('statusText').textContent = 'エラー';
             } finally {
                 document.getElementById('loading').style.display = 'none';
@@ -354,7 +403,7 @@
         }
         
         function clearGallery() {
-            if (confirm('ギャラリーをクリアしますか？\n（LocalStorageのお化けリストは残ります）')) {
+            if (confirm('ギャラリーをクリアしますか？\n（Firebaseのデータは削除されません）')) {
                 document.getElementById('gallery').innerHTML = '';
                 monsters = [];
                 document.getElementById('statusText').textContent = '待機中';
@@ -363,22 +412,21 @@
         
         function showDebugInfo() {
             console.log('=== デバッグ情報 ===');
-            const savedUrls = JSON.parse(localStorage.getItem('monster_urls') || '[]');
             
             const info = `
 【デバッグ情報】
-保存されているお化け数: ${savedUrls.length}体
+保存されているお化け数: ${monsters.length}体
 
-LocalStorageのキー: monster_urls
-データ: ${localStorage.getItem('monster_urls') ? 'あり' : 'なし'}
+Firebase接続: ${window.firebaseDB ? '成功' : '失敗'}
+データソース: Firebase Realtime Database
 
-URL一覧:
-${savedUrls.map((m, i) => `${i + 1}. ${m.name}\n   ${m.url.substring(0, 50)}...`).join('\n')}
+お化けリスト:
+${monsters.map((m, i) => `${i + 1}. ${m.name || '名無し'} (${m.timestamp || '不明'})\n   ${m.url.substring(0, 50)}...`).join('\n')}
 
 【確認事項】
-✓ このHTMLと生成アプリのHTMLは同じフォルダにありますか？
-✓ 同じブラウザで開いていますか？
-✓ プライベートブラウズモードではありませんか？
+✓ Firebase設定が正しく入力されていますか？
+✓ Firebaseのセキュリティルールは適切ですか？
+✓ 生成アプリと展示館アプリで同じFirebase設定を使っていますか？
             `;
             
             console.log(info);
@@ -388,17 +436,20 @@ ${savedUrls.map((m, i) => `${i + 1}. ${m.name}\n   ${m.url.substring(0, 50)}...`
         // 自動読み込み
         window.addEventListener('load', () => {
             console.log('=== ページ読み込み完了 ===');
-            const savedUrls = JSON.parse(localStorage.getItem('monster_urls') || '[]');
-            console.log('LocalStorageの確認:', savedUrls.length, '体');
             
-            if (savedUrls.length > 0) {
-                console.log('自動読み込み実行');
-                loadFromCloud();
-            } else {
-                console.log('保存されたお化けなし');
-                document.getElementById('statusText').textContent = '待機中（お化けなし）';
-            }
+            // Firebase接続後、3秒待ってから自動読み込み
+            setTimeout(() => {
+                if (window.firebaseDB) {
+                    console.log('自動読み込み実行');
+                    loadFromCloud();
+                } else {
+                    console.log('Firebase未接続');
+                    document.getElementById('statusText').textContent = 'Firebase設定が必要';
+                }
+            }, 3000);
         });
+
+        console.log('✨ ばけばけ展示館（Firebase版）起動完了 ✨');
     </script>
 </body>
 </html>

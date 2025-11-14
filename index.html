@@ -1,455 +1,897 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>👻 ばけばけ展示館（Firebase版）</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Courier New', monospace;
-            background: #0f0a1a;
-            color: #bb88ff;
-            min-height: 100vh;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        body::before {
-            content: '';
-            position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(187, 136, 255, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(150, 100, 200, 0.15) 0%, transparent 50%);
-            animation: wave 20s ease-in-out infinite;
-            pointer-events: none;
-            z-index: 0;
-        }
-        
-        @keyframes wave {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            25% { transform: translate(5%, 5%) rotate(1deg); }
-            50% { transform: translate(-3%, 3%) rotate(-1deg); }
-            75% { transform: translate(3%, -5%) rotate(0.5deg); }
-        }
-        
-        .scanline {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(187, 136, 255, 0.03) 0px,
-                transparent 2px,
-                transparent 4px
-            );
-            pointer-events: none;
-            z-index: 9999;
-        }
-        
-        header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            text-align: center;
-            padding: 20px;
-            background: rgba(15, 10, 26, 0.9);
-            border-bottom: 2px solid #bb88ff;
-            box-shadow: 0 5px 20px rgba(187, 136, 255, 0.3);
-        }
-        
-        h1 {
-            font-size: 48px;
-            text-shadow: 0 0 10px #bb88ff, 0 0 20px #bb88ff, 0 0 40px #bb88ff;
-            letter-spacing: 8px;
-            animation: flicker 3s infinite;
-            margin-bottom: 10px;
-        }
-        
-        @keyframes flicker {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.97; }
-        }
-        
-        .control-panel {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            background: rgba(20, 10, 30, 0.95);
-            border: 2px solid #bb88ff;
-            border-radius: 10px;
-            padding: 12px;
-            width: 600px;
-            box-shadow: 0 0 20px rgba(187, 136, 255, 0.3);
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-        
-        button {
-            flex: 1;
-            padding: 10px;
-            background: linear-gradient(135deg, #bb88ff 0%, #9966cc 100%);
-            color: #0f0a1a;
-            border: none;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: bold;
-            font-family: 'Courier New', monospace;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        button:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 5px 15px rgba(187, 136, 255, 0.5); 
-        }
-        
-        .status {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-size: 12px;
-        }
-        
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background: #bb88ff;
-            border-radius: 50%;
-            box-shadow: 0 0 10px #bb88ff;
-            animation: blink 2s infinite;
-        }
-        
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        
-        .gallery {
-            position: fixed;
-            top: 120px;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
-        }
-        
-        .floating-monster {
-            position: absolute;
-            width: 240px;
-            height: 150px;
-            border: 2px solid #bb88ff;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(187, 136, 255, 0.5);
-            cursor: pointer;
-            transition: transform 0.3s, box-shadow 0.3s;
-            animation: float 20s ease-in-out infinite;
-            background-size: cover;
-            background-position: center;
-            background-color: rgba(20, 10, 30, 0.8);
-        }
-        
-        .floating-monster:hover {
-            transform: scale(1.1) !important;
-            box-shadow: 0 0 40px rgba(187, 136, 255, 0.8);
-            z-index: 100;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            25% { transform: translate(30px, -30px) rotate(5deg); }
-            50% { transform: translate(-20px, 20px) rotate(-5deg); }
-            75% { transform: translate(20px, -10px) rotate(3deg); }
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-        }
-        
-        .modal img {
-            max-width: 90%;
-            max-height: 90%;
-            border: 3px solid #bb88ff;
-            border-radius: 10px;
-            box-shadow: 0 0 50px rgba(187, 136, 255, 0.8);
-        }
-        
-        .loading {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            font-size: 24px;
-            display: none;
-            z-index: 1500;
-        }
-        
-        .debug-btn {
-            background: linear-gradient(135deg, #ff6600 0%, #ff4400 100%);
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>👾 ばけばけ召喚装置（Firebase版）</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        .firebase-indicator {
-            position: fixed;
-            top: 90px;
-            right: 20px;
-            background: rgba(20, 10, 30, 0.9);
-            border: 2px solid #bb88ff;
-            border-radius: 8px;
-            padding: 10px 15px;
-            font-size: 11px;
-            z-index: 1000;
-            box-shadow: 0 0 15px rgba(187, 136, 255, 0.3);
-        }
-    </style>
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0a1a0f;
+      color: #00ff88;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background:
+        radial-gradient(circle at 20% 50%, rgba(0,255,136,0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(0,200,100,0.15) 0%, transparent 50%);
+      animation: wave 20s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+    @keyframes wave {
+      0%,100% { transform: translate(0,0) rotate(0deg); }
+      25% { transform: translate(5%,5%) rotate(1deg); }
+      50% { transform: translate(-3%,3%) rotate(-1deg); }
+      75% { transform: translate(3%,-5%) rotate(0.5deg); }
+    }
+
+    .scanline {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0,255,136,0.03) 0px,
+        transparent 2px,
+        transparent 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 72px;
+      text-shadow: 0 0 3px #00ff88, 0 0 5px #00ff88, 0 0 10px #00ff88;
+      letter-spacing: 12px;
+      animation: flicker 3s infinite;
+      margin-bottom: 15px;
+    }
+    @keyframes flicker { 0%,100% { opacity: 1; } 50% { opacity: 0.97; } }
+    .subtitle { font-size: 14px; color: #00cc70; letter-spacing: 3px; }
+
+    .settings-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,255,136,0.2);
+      border: 2px solid #00ff88;
+      color: #00ff88;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 10000;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    .settings-btn:hover {
+      background: rgba(0,255,136,0.4);
+      box-shadow: 0 0 15px rgba(0,255,136,0.5);
+    }
+
+    .container {
+      position: relative; z-index: 2;
+      display: grid;
+      grid-template-columns: 320px 1fr 320px;
+      gap: 20px;
+      padding: 20px;
+      max-width: 1600px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+
+    .panel {
+      background: rgba(20,10,30,0.85);
+      border: 2px solid #00ff88;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 0 20px rgba(0,255,136,0.3);
+    }
+
+    .left-panel, .center-panel, .right-panel {
+      display: flex; flex-direction: column; gap: 20px;
+    }
+
+    .section-title {
+      font-size: 18px; color: #00ff88;
+      border-bottom: 2px solid #00ff88;
+      padding-bottom: 8px; margin-bottom: 15px;
+      text-shadow: 0 0 10px #00ff88;
+    }
+
+    input[type="text"], textarea {
+      width: 100%; padding: 12px;
+      background: rgba(10,5,20,0.8);
+      border: 2px solid #00ff88;
+      border-radius: 8px;
+      color: #00ff88;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+    }
+    textarea { min-height: 80px; resize: vertical; }
+
+    .file-upload {
+      border: 2px dashed #00ff88;
+      padding: 25px; text-align: center;
+      border-radius: 8px; cursor: pointer;
+      background: rgba(0,255,136,0.05);
+      transition: all 0.3s;
+    }
+    .file-upload:hover {
+      background: rgba(0,255,136,0.1);
+      box-shadow: 0 0 15px rgba(0,255,136,0.5);
+    }
+    #preview {
+      max-width: 100%; border-radius: 8px;
+      margin-top: 15px; display: none;
+      border: 2px solid #00ff88;
+      box-shadow: 0 0 10px rgba(0,255,136,0.3);
+    }
+
+    .image-display {
+      flex: 1;
+      background: rgba(10,5,20,0.6);
+      border: 2px solid #00ff88;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      aspect-ratio: 16 / 10;
+      max-height: 500px;
+      position: relative; overflow: hidden;
+    }
+
+    button {
+      width: 100%; padding: 15px;
+      background: linear-gradient(135deg,#00ff88 0%,#00cc70 100%);
+      color: #0a1a0f;
+      border: none; border-radius: 8px;
+      font-size: 16px; font-weight: bold;
+      font-family: 'Courier New', monospace;
+      cursor: pointer; transition: all 0.3s;
+    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,255,136,0.5); }
+    button:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
+
+    .save-btn {
+      background: linear-gradient(135deg, #ffaa00 0%, #ff8800 100%);
+      color: #1a0a00;
+    }
+    .save-btn:hover { box-shadow: 0 5px 15px rgba(255,170,0,0.5); }
+
+    .slider-container {
+      background: rgba(10,5,20,0.5);
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #00ff88;
+    }
+    .slider-label {
+      display: flex; justify-content: space-between;
+      margin-bottom: 10px; font-size: 12px;
+    }
+    .current-value {
+      font-weight: bold; font-size: 18px; color: #00ff88;
+      text-shadow: 0 0 10px #00ff88;
+    }
+    input[type="range"] {
+      width: 100%; height: 6px;
+      background: rgba(0,255,136,0.2);
+      outline: none; border-radius: 3px; -webkit-appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 20px; height: 20px;
+      background: #00ff88; border-radius: 50%;
+      cursor: pointer; box-shadow: 0 0 10px #00ff88;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 20px; height: 20px; background: #00ff88;
+      border-radius: 50%; cursor: pointer; border: none; box-shadow: 0 0 10px #00ff88;
+    }
+
+    .preset-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .preset-btn {
+      padding: 8px;
+      background: rgba(0,255,136,0.1);
+      border: 1px solid #00ff88;
+      border-radius: 6px;
+      color: #00ff88;
+      cursor: pointer;
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      transition: all 0.3s;
+    }
+    .preset-btn:hover { background: rgba(0,255,136,0.2); }
+    .description-box {
+      background: rgba(0,255,136,0.05);
+      padding: 10px; border-radius: 6px; font-size: 11px; color: #00cc70; margin-top: 10px; border-left: 3px solid #00ff88;
+    }
+
+    .loading { text-align: center; padding: 20px; display: none; }
+    .loading-text { font-size: 20px; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    .progress-wrap {
+      margin-top: 12px;
+      text-align: left;
+    }
+    .progress-label {
+      font-size: 12px; opacity: .8; margin-bottom: 6px;
+      display: flex; justify-content: space-between;
+    }
+    .progress-bar-bg {
+      width: 100%; height: 20px;
+      background: rgba(10,5,20,0.8);
+      border: 1px solid #00ff88;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00ff88, #00cc70);
+      width: 0%;
+      transition: width 0.2s ease-out;
+      box-shadow: 0 0 10px rgba(0,255,136,0.6);
+    }
+
+    .status-message {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+      border-left: 4px solid;
+    }
+    #error {
+      background: rgba(255,50,50,0.2);
+      border-color: #ff3333;
+      color: #ff8888;
+    }
+    #success {
+      background: rgba(0,255,136,0.2);
+      border-color: #00ff88;
+      color: #00ff88;
+    }
+
+    .placeholder-text {
+      color: #00cc70;
+      font-size: 24px;
+      text-align: center;
+      opacity: 0.6;
+    }
+
+    #resultImage {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .firebase-status {
+      font-size: 11px;
+      color: #00cc70;
+      margin-top: 10px;
+      padding: 8px;
+      background: rgba(0,255,136,0.05);
+      border-radius: 6px;
+      border-left: 3px solid #00ff88;
+    }
+  </style>
 </head>
 <body>
-    <div class="scanline"></div>
-    
+  <div class="scanline"></div>
+  <button class="settings-btn" onclick="openSettings()">⚙️ API設定</button>
+  
+  <div class="container">
     <header>
-        <h1>👻 ばけばけ展示館 👻</h1>
+      <h1>👾 ばけばけ召喚装置 👾</h1>
+      <div class="subtitle">YOKAI MONSTER SUMMONER - FIREBASE EDITION</div>
     </header>
 
-    <div class="firebase-indicator" id="firebaseIndicator">
+    <!-- 左パネル: 原料投入 -->
+    <div class="left-panel panel">
+      <div class="section-title">原料投入</div>
+      
+      <div class="file-upload" onclick="document.getElementById('imageInput').click()">
+        📸 画像をアップロード<br>
+        <small style="opacity: 0.7;">クリックまたはドラッグ&ドロップ</small>
+        <input type="file" id="imageInput" accept="image/*" style="display: none;" />
+      </div>
+      <img id="preview" alt="プレビュー" />
+
+      <div>
+        <label style="display: block; margin-bottom: 8px; font-size: 12px;">妖怪の名前</label>
+        <input type="text" id="monsterName" placeholder="例: 河童、天狗、ろくろ首" />
+      </div>
+
+      <div>
+        <label style="display: block; margin-bottom: 8px; font-size: 12px;">追加指示</label>
+        <textarea id="customPrompt" placeholder="例: 炎のエフェクトを追加、夜の雰囲気で"></textarea>
+      </div>
+
+      <div class="slider-container">
+        <div class="slider-label">
+          <span>原画忠実度</span>
+          <span class="current-value" id="fidelityValue">80%</span>
+        </div>
+        <input type="range" id="fidelitySlider" min="0" max="100" value="80" step="10" />
+        <div class="preset-btns">
+          <div class="preset-btn" onclick="setFidelity(20)">自由変換</div>
+          <div class="preset-btn" onclick="setFidelity(50)">バランス</div>
+          <div class="preset-btn" onclick="setFidelity(80)">忠実</div>
+        </div>
+        <div class="description-box" id="fidelityDescription">
+          原画の構図・配色を維持しつつ妖怪化します
+        </div>
+      </div>
+    </div>
+
+    <!-- 中央パネル: 結果表示 -->
+    <div class="center-panel panel">
+      <div class="section-title">召喚結果</div>
+      
+      <div class="image-display">
+        <div class="placeholder-text" id="placeholder">👾 ここに妖怪が出現します 👾</div>
+        <canvas id="resultCanvas" style="display: none; max-width: 100%; max-height: 100%; border-radius: 8px;"></canvas>
+      </div>
+
+      <button id="summonBtn" onclick="summonMonster()">🔮 妖怪召喚実行</button>
+      <button class="save-btn" id="saveBtn" onclick="saveToCloud()" disabled>💾 展示館に保存（Firebase）</button>
+
+      <div class="loading" id="loading">
+        <div class="loading-text">⚡ 召喚中... ⚡</div>
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>生成進捗</span>
+            <span id="progressPercent">0%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progressBar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="status-message" id="error"></div>
+      <div class="status-message" id="success"></div>
+    </div>
+
+    <!-- 右パネル: 情報 -->
+    <div class="right-panel panel">
+      <div class="section-title">📖 使い方</div>
+      <div class="description-box">
+        <strong>1. 原料投入</strong><br>
+        • 妖怪化したい画像をアップロード<br>
+        • 妖怪の名前を入力（任意）<br><br>
+        
+        <strong>2. 忠実度調整</strong><br>
+        • 高: 原画に忠実な変換<br>
+        • 低: 創造的な変換<br><br>
+        
+        <strong>3. 召喚実行</strong><br>
+        • ボタンを押して妖怪を生成<br>
+        • 完成したら展示館に保存可能<br><br>
+        
+        <strong>💡 ヒント</strong><br>
+        • 人物や動物の写真がおすすめ<br>
+        • 追加指示で細かい調整も可能<br>
+        • リアルな妖怪スタイルで生成されます
+      </div>
+
+      <div class="section-title">⚙️ システム情報</div>
+      <div class="description-box">
+        <strong>生成AI:</strong> Gemini 2.5 Flash Image<br>
+        <strong>スタイル:</strong> Realistic Yokai<br>
+        <strong>縦横比:</strong> 16:10<br>
+        <strong>画像保存:</strong> ImgBB Cloud<br>
+        <strong>URL管理:</strong> Firebase Realtime Database
+      </div>
+
+      <div class="firebase-status" id="firebaseStatus">
         🔥 Firebase: 接続確認中...
+      </div>
     </div>
+  </div>
 
-    <div class="control-panel">
-        <div class="button-group">
-            <button onclick="loadFromCloud()">📥 読み込む</button>
-            <button onclick="clearGallery()">🗑️ クリア</button>
-            <button class="debug-btn" onclick="showDebugInfo()">🔍 デバッグ</button>
-        </div>
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getDatabase, ref, push, set } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    // ========================================
+    // 🔥 Firebase設定（ここを書き換えてください）
+    // ========================================
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBwl3fDVTTHpvyYn9fP-AgKVo-bjGZfAK0",
+      authDomain: "bakebake-garalley.firebaseapp.com",
+      databaseURL: "https://bakebake-garalley-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "bakebake-garalley",
+      storageBucket: "bakebake-garalley.firebasestorage.app",
+      messagingSenderId: "215696593569",
+      appId: "1:215696593569:web:35dffc96aae1cb186896e0"
+    };
+
+    // Firebase初期化
+    let app, database;
+    try {
+      app = initializeApp(firebaseConfig);
+      database = getDatabase(app);
+      document.getElementById('firebaseStatus').textContent = '🔥 Firebase: 接続成功！';
+      console.log('Firebase initialized successfully');
+    } catch (error) {
+      document.getElementById('firebaseStatus').textContent = '🔥 Firebase: 接続エラー（設定を確認してください）';
+      console.error('Firebase initialization error:', error);
+    }
+
+    // グローバルに公開
+    window.firebaseDB = database;
+    window.firebaseRef = ref;
+    window.firebasePush = push;
+    window.firebaseSet = set;
+  </script>
+
+  <script>
+    // ====== API Key管理 ======
+    let GEMINI_API_KEY = localStorage.getItem('gemini_api_key');
+    let IMGBB_API_KEY = localStorage.getItem('imgbb_api_key');
+
+    // 初回起動時の設定
+    if (!GEMINI_API_KEY || !IMGBB_API_KEY) {
+      const setupMessage = '🔑 API Keyの初期設定が必要です\n\n' +
+        '以下の2つのAPIキーを順番に入力してください：\n' +
+        '1. Gemini API Key\n' +
+        '2. ImgBB API Key\n\n' +
+        '（次回から自動で読み込まれます）';
+      
+      alert(setupMessage);
+      
+      if (!GEMINI_API_KEY) {
+        GEMINI_API_KEY = prompt('1/2: Gemini API Keyを入力してください:');
+        if (GEMINI_API_KEY) {
+          localStorage.setItem('gemini_api_key', GEMINI_API_KEY);
+        }
+      }
+      
+      if (!IMGBB_API_KEY) {
+        IMGBB_API_KEY = prompt('2/2: ImgBB API Keyを入力してください:');
+        if (IMGBB_API_KEY) {
+          localStorage.setItem('imgbb_api_key', IMGBB_API_KEY);
+        }
+      }
+      
+      if (GEMINI_API_KEY && IMGBB_API_KEY) {
+        alert('✅ API Keyを保存しました！');
+      } else {
+        alert('⚠️ API Keyが必要です。右上の⚙️ボタンから設定できます。');
+      }
+    }
+
+    // API Key設定画面を開く
+    function openSettings() {
+      const currentGemini = GEMINI_API_KEY ? '設定済み (****' + GEMINI_API_KEY.slice(-4) + ')' : '未設定';
+      const currentImgBB = IMGBB_API_KEY ? '設定済み (****' + IMGBB_API_KEY.slice(-4) + ')' : '未設定';
+      
+      const message = '📋 現在の設定\n\n' +
+        `Gemini API Key: ${currentGemini}\n` +
+        `ImgBB API Key: ${currentImgBB}\n\n` +
+        'API Keyを再設定しますか？';
+      
+      if (confirm(message)) {
+        const newGemini = prompt('Gemini API Keyを入力してください:', GEMINI_API_KEY || '');
+        if (newGemini) {
+          GEMINI_API_KEY = newGemini;
+          localStorage.setItem('gemini_api_key', newGemini);
+        }
         
-        <div class="status">
-            <div class="status-dot"></div>
-            <span id="statusText">待機中</span>
-        </div>
-    </div>
+        const newImgBB = prompt('ImgBB API Keyを入力してください:', IMGBB_API_KEY || '');
+        if (newImgBB) {
+          IMGBB_API_KEY = newImgBB;
+          localStorage.setItem('imgbb_api_key', newImgBB);
+        }
+        
+        alert('✅ API Keyを更新しました！');
+      }
+    }
 
-    <div class="gallery" id="gallery"></div>
-    
-    <div class="loading" id="loading">
-        <div>👾 読み込み中... 👾</div>
-    </div>
-    
-    <div class="modal" id="modal" onclick="closeModal()">
-        <img id="modalImage" alt="拡大表示">
-    </div>
+    // ====== グローバル変数 ======
+    let uploadedImage = null;
+    let generatedImageBase64 = null;
+    let currentFidelity = 80;
+    let progressValue = 0;
+    let progressTimer = null;
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, onValue, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    // 忠実度の説明
+    const fidelityDescriptions = {
+      0: '完全に新しい創作的な妖怪に変換します',
+      20: '基本コンセプトのみ維持し、大胆に変換します',
+      40: '主要な要素を残しつつ、創造的に変換します',
+      60: '構図をある程度維持しつつ妖怪化します',
+      80: '原画の構図・配色を維持しつつ妖怪化します',
+      100: '原画に最も忠実に、スタイルのみ変換します'
+    };
 
-        // ========================================
-        // 🔥 Firebase設定（生成アプリと同じ設定を使用）
-        // ========================================
-        const firebaseConfig = {
-          apiKey: "AIzaSyBwl3fDVTTHpvyYn9fP-AgKVo-bjGZfAK0",
-          authDomain: "bakebake-garalley.firebaseapp.com",
-          databaseURL: "https://bakebake-garalley-default-rtdb.asia-southeast1.firebasedatabase.app",
-          projectId: "bakebake-garalley",
-          storageBucket: "bakebake-garalley.firebasestorage.app",
-          messagingSenderId: "215696593569",
-          appId: "1:215696593569:web:35dffc96aae1cb186896e0"
+    // ====== 画像アップロード ======
+    const imageInput = document.getElementById('imageInput');
+    const preview = document.getElementById('preview');
+
+    imageInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          uploadedImage = e.target.result;
+          preview.src = uploadedImage;
+          preview.style.display = 'block';
+          showSuccess('✅ 原料画像を投入しました');
         };
+        reader.readAsDataURL(file);
+      }
+    });
 
-        // Firebase初期化
-        let app, database;
-        try {
-            app = initializeApp(firebaseConfig);
-            database = getDatabase(app);
-            document.getElementById('firebaseIndicator').textContent = '🔥 Firebase: 接続成功';
-            document.getElementById('firebaseIndicator').style.borderColor = '#bb88ff';
-            console.log('Firebase initialized successfully');
-        } catch (error) {
-            document.getElementById('firebaseIndicator').textContent = '🔥 Firebase: 接続エラー';
-            document.getElementById('firebaseIndicator').style.borderColor = '#ff6666';
-            console.error('Firebase initialization error:', error);
+    // ドラッグ&ドロップ
+    const fileUpload = document.querySelector('.file-upload');
+    fileUpload.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      fileUpload.style.background = 'rgba(0,255,136,0.2)';
+    });
+    fileUpload.addEventListener('dragleave', () => {
+      fileUpload.style.background = 'rgba(0,255,136,0.05)';
+    });
+    fileUpload.addEventListener('drop', (e) => {
+      e.preventDefault();
+      fileUpload.style.background = 'rgba(0,255,136,0.05)';
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          uploadedImage = e.target.result;
+          preview.src = uploadedImage;
+          preview.style.display = 'block';
+          showSuccess('✅ 原料画像を投入しました');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // ====== 忠実度スライダー ======
+    const fidelitySlider = document.getElementById('fidelitySlider');
+    fidelitySlider.addEventListener('input', function() {
+      currentFidelity = parseInt(this.value);
+      updateFidelityDisplay();
+    });
+
+    function setFidelity(value) {
+      currentFidelity = value;
+      fidelitySlider.value = value;
+      updateFidelityDisplay();
+    }
+
+    function updateFidelityDisplay() {
+      document.getElementById('fidelityValue').textContent = currentFidelity + '%';
+      const closestKey = Object.keys(fidelityDescriptions)
+        .map(Number)
+        .reduce((prev, curr) => Math.abs(curr - currentFidelity) < Math.abs(prev - currentFidelity) ? curr : prev);
+      document.getElementById('fidelityDescription').textContent = fidelityDescriptions[closestKey];
+    }
+    updateFidelityDisplay();
+
+    // ====== ユーティリティ ======
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = '❌ ' + message;
+      errorDiv.style.display = 'block';
+      document.getElementById('success').style.display = 'none';
+    }
+
+    function showSuccess(message) {
+      const successDiv = document.getElementById('success');
+      successDiv.textContent = message;
+      successDiv.style.display = 'block';
+      document.getElementById('error').style.display = 'none';
+    }
+
+    function buildPrompt() {
+      const monsterName = document.getElementById('monsterName').value.trim();
+      let prompt = "";
+
+      if (monsterName) {
+        prompt = `Transform this into a ${monsterName} (Japanese yokai monster) in a photorealistic style. `;
+      } else {
+        prompt = `Transform this into a Japanese yokai monster in a photorealistic style. `;
+      }
+
+      if (currentFidelity >= 100) {
+        prompt += "IMPORTANT: Preserve exact composition, layout, colors. Only change rendering style to realistic yokai.";
+      } else if (currentFidelity >= 80) {
+        prompt += "IMPORTANT: Preserve exact composition, layout, colors. Only change rendering style to realistic yokai.";
+      } else if (currentFidelity >= 60) {
+        prompt += "Keep main composition similar. Maintain colors and positioning while transforming into realistic yokai.";
+      } else if (currentFidelity >= 40) {
+        prompt += "Keep general composition but adjust details and lighting for realistic yokai appearance.";
+      } else if (currentFidelity >= 20) {
+        prompt += "Keep main subject but reimagine creatively as a realistic yokai monster.";
+      } else {
+        prompt += "Keep only basic concept and create something new as a realistic yokai monster.";
+      }
+
+      const custom = document.getElementById('customPrompt').value.trim();
+      if (custom) prompt += ` Additional instructions: ${custom}`;
+
+      return prompt;
+    }
+
+    // ====== 進捗バー制御 ======
+    function startProgress() {
+      progressValue = 0;
+      const bar = document.getElementById('progressBar');
+      const label = document.getElementById('progressPercent');
+      bar.style.width = '0%';
+      label.textContent = '0%';
+
+      if (progressTimer) clearInterval(progressTimer);
+      progressTimer = setInterval(() => {
+        const increment = Math.max(0.2, (90 - progressValue) * 0.03);
+        progressValue = Math.min(90, progressValue + increment);
+        bar.style.width = progressValue.toFixed(0) + '%';
+        label.textContent = progressValue.toFixed(0) + '%';
+      }, 120);
+    }
+
+    function finishProgress() {
+      const bar = document.getElementById('progressBar');
+      const label = document.getElementById('progressPercent');
+      if (progressTimer) { clearInterval(progressTimer); progressTimer = null; }
+      progressValue = 100;
+      bar.style.width = '100%';
+      label.textContent = '100%';
+    }
+
+    function resetProgress() {
+      const bar = document.getElementById('progressBar');
+      const label = document.getElementById('progressPercent');
+      if (progressTimer) { clearInterval(progressTimer); progressTimer = null; }
+      progressValue = 0;
+      bar.style.width = '0%';
+      label.textContent = '0%';
+    }
+
+    // ====== 召喚処理 ======
+    async function summonMonster() {
+      // API Keyチェック
+      if (!GEMINI_API_KEY) {
+        showError('Gemini API Keyが設定されていません。⚙️ボタンから設定してください。');
+        return;
+      }
+
+      if (!uploadedImage) return showError('原料画像を投入してください');
+
+      document.getElementById('summonBtn').disabled = true;
+      document.getElementById('saveBtn').disabled = true;
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('success').style.display = 'none';
+      document.getElementById('placeholder').style.display = 'none';
+      document.getElementById('resultCanvas').style.display = 'none';
+      startProgress();
+
+      try {
+        const prompt = buildPrompt();
+        const base64Data = uploadedImage.split(',')[1];
+        const mimeType = uploadedImage.split(',')[0].split(':')[1].split(';')[0];
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { inline_data: { mime_type: mimeType, data: base64Data } },
+                  { text: prompt }
+                ]
+              }]
+            })
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error?.message || '召喚に失敗しました');
         }
 
-        // グローバルに公開
-        window.firebaseDB = database;
-        window.firebaseRef = ref;
-        window.firebaseOnValue = onValue;
-        window.firebaseGet = get;
-    </script>
+        const data = await response.json();
 
-    <script>
-        let monsters = [];
-        
-        async function loadFromCloud() {
-            console.log('=== Firebase読み込み開始 ===');
-            
-            if (!window.firebaseDB) {
-                alert('Firebaseに接続されていません。設定を確認してください。');
-                return;
+        let transformedImageData = null;
+        let resultMime = 'image/png';
+        if (data && data.candidates && data.candidates.length) {
+          for (const cand of data.candidates) {
+            if (!cand.content || !cand.content.parts) continue;
+            for (const part of cand.content.parts) {
+              if (part.inlineData) {
+                transformedImageData = part.inlineData.data;
+                resultMime = part.inlineData.mimeType || 'image/png';
+                break;
+              }
             }
+            if (transformedImageData) break;
+          }
+        }
+        if (!transformedImageData) {
+          throw new Error('画像データが見つかりませんでした');
+        }
 
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('statusText').textContent = '読み込み中...';
+        generatedImageBase64 = transformedImageData;
+        const url = `data:${resultMime};base64,${generatedImageBase64}`;
+
+        // Canvas上に画像とテキストを合成
+        await drawImageWithText(url);
+        
+        document.getElementById('saveBtn').disabled = false;
+        showSuccess('✅ 妖怪召喚成功！');
+
+        finishProgress();
+      } catch (err) {
+        showError('エラー: ' + err.message);
+        resetProgress();
+        document.getElementById('placeholder').style.display = 'block';
+      } finally {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('summonBtn').disabled = false;
+      }
+    }
+
+    // ====== Canvas画像合成処理 ======
+    async function drawImageWithText(imageUrl) {
+      return new Promise((resolve, reject) => {
+        const canvas = document.getElementById('resultCanvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = function() {
+          // Canvasサイズを画像に合わせる
+          canvas.width = img.width;
+          canvas.height = img.height;
+          
+          // 画像を描画
+          ctx.drawImage(img, 0, 0);
+          
+          // テキスト情報を取得
+          const monsterName = document.getElementById('monsterName').value.trim() || '名無しの妖怪';
+          const customPrompt = document.getElementById('customPrompt').value.trim();
+          
+          // テキストボックスの設定（1.5倍に拡大）
+          const boxHeight = customPrompt ? 150 : 105;
+          const boxY = canvas.height - boxHeight;
+          
+          // 半透明の黒背景を描画
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+          ctx.fillRect(0, boxY, canvas.width, boxHeight);
+          
+          // テキストのスタイル設定
+          ctx.fillStyle = '#00ff88';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          
+          // 妖怪名を描画（👹マークを削除）
+          const fontSize = Math.min(canvas.width / 15, 40);
+          ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+          ctx.fillText(monsterName, 20, boxY + 15);
+          
+          // 特徴を描画（追加指示がある場合）
+          if (customPrompt) {
+            const descFontSize = Math.min(canvas.width / 25, 24);
+            ctx.font = `${descFontSize}px "Courier New", monospace`;
+            ctx.fillStyle = '#88ffaa';
             
-            try {
-                const monstersRef = window.firebaseRef(window.firebaseDB, 'monsters');
-                const snapshot = await window.firebaseGet(monstersRef);
-                
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    monsters = Object.keys(data).map(key => ({
-                        id: key,
-                        ...data[key]
-                    }));
-                    
-                    console.log('Firebaseから取得:', monsters);
-                    console.log('お化けの数:', monsters.length);
-                    
-                    displayMonsters();
-                    document.getElementById('statusText').textContent = `${monsters.length}体のお化けを展示中`;
-                } else {
-                    console.log('データが存在しません');
-                    alert('まだお化けが保存されていません。\n生成アプリで妖怪を召喚して保存してください。');
-                    document.getElementById('statusText').textContent = '待機中（お化けなし）';
-                }
-                
-            } catch (error) {
-                console.error('読み込みエラー:', error);
-                alert('読み込みエラー: ' + error.message + '\n\nFirebaseの設定を確認してください。');
-                document.getElementById('statusText').textContent = 'エラー';
-            } finally {
-                document.getElementById('loading').style.display = 'none';
+            // テキストを折り返し
+            const maxWidth = canvas.width - 40;
+            const words = customPrompt.split('');
+            let line = '';
+            let y = boxY + 15 + fontSize + 10;
+            
+            for (let i = 0; i < words.length; i++) {
+              const testLine = line + words[i];
+              const metrics = ctx.measureText(testLine);
+              if (metrics.width > maxWidth && i > 0) {
+                ctx.fillText(line, 20, y);
+                line = words[i];
+                y += descFontSize + 5;
+              } else {
+                line = testLine;
+              }
             }
-        }
+            ctx.fillText(line, 20, y);
+          }
+          
+          // Canvasを表示
+          canvas.style.display = 'block';
+          
+          // Canvas画像をBase64に変換して保存用変数に格納
+          generatedImageBase64 = canvas.toDataURL('image/png').split(',')[1];
+          
+          resolve();
+        };
         
-        function displayMonsters() {
-            console.log('=== 表示開始 ===');
-            const gallery = document.getElementById('gallery');
-            gallery.innerHTML = '';
-            
-            monsters.forEach((monster, index) => {
-                console.log(`お化け${index + 1}:`, monster);
-                
-                const div = document.createElement('div');
-                div.className = 'floating-monster';
-                
-                const randomX = Math.random() * (window.innerWidth - 260);
-                const randomY = Math.random() * (window.innerHeight - 300) + 150;
-                div.style.left = randomX + 'px';
-                div.style.top = randomY + 'px';
-                
-                div.style.animationDelay = (Math.random() * 10) + 's';
-                div.style.animationDuration = (15 + Math.random() * 10) + 's';
-                
-                div.style.backgroundImage = `url(${monster.url})`;
-                div.title = monster.name || '妖怪';
-                
-                div.onclick = () => showModal(monster.url);
-                
-                // 画像読み込みエラーのハンドリング
-                const img = new Image();
-                img.onload = () => {
-                    console.log(`お化け${index + 1}の画像読み込み成功:`, monster.url);
-                };
-                img.onerror = () => {
-                    console.error(`お化け${index + 1}の画像読み込み失敗:`, monster.url);
-                    div.style.backgroundImage = 'none';
-                    div.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ff6666;text-align:center;font-size:12px;padding:10px;">❌<br>読込失敗</div>';
-                };
-                img.src = monster.url;
-                
-                gallery.appendChild(div);
-            });
-            
-            console.log(`${monsters.length}体のお化けを配置完了`);
-        }
+        img.onerror = function() {
+          reject(new Error('画像の読み込みに失敗しました'));
+        };
         
-        function showModal(imageUrl) {
-            document.getElementById('modalImage').src = imageUrl;
-            document.getElementById('modal').style.display = 'flex';
-        }
-        
-        function closeModal() {
-            document.getElementById('modal').style.display = 'none';
-        }
-        
-        function clearGallery() {
-            if (confirm('ギャラリーをクリアしますか？\n（Firebaseのデータは削除されません）')) {
-                document.getElementById('gallery').innerHTML = '';
-                monsters = [];
-                document.getElementById('statusText').textContent = '待機中';
-            }
-        }
-        
-        function showDebugInfo() {
-            console.log('=== デバッグ情報 ===');
-            
-            const info = `
-【デバッグ情報】
-保存されているお化け数: ${monsters.length}体
+        img.src = imageUrl;
+      });
+    }
 
-Firebase接続: ${window.firebaseDB ? '成功' : '失敗'}
-データソース: Firebase Realtime Database
+    // ====== 保存処理（ImgBB + Firebase） ======
+    async function saveToCloud() {
+      // API Keyチェック
+      if (!IMGBB_API_KEY) {
+        showError('ImgBB API Keyが設定されていません。⚙️ボタンから設定してください。');
+        return;
+      }
 
-お化けリスト:
-${monsters.map((m, i) => `${i + 1}. ${m.name || '名無し'} (${m.timestamp || '不明'})\n   ${m.url.substring(0, 50)}...`).join('\n')}
+      if (!generatedImageBase64) return showError('保存する画像がありません。先に召喚してください。');
+      if (!window.firebaseDB) return showError('Firebaseに接続されていません。設定を確認してください。');
 
-【確認事項】
-✓ Firebase設定が正しく入力されていますか？
-✓ Firebaseのセキュリティルールは適切ですか？
-✓ 生成アプリと展示館アプリで同じFirebase設定を使っていますか？
-            `;
-            
-            console.log(info);
-            alert(info);
-        }
-        
-        // 自動読み込み
-        window.addEventListener('load', () => {
-            console.log('=== ページ読み込み完了 ===');
-            
-            // Firebase接続後、3秒待ってから自動読み込み
-            setTimeout(() => {
-                if (window.firebaseDB) {
-                    console.log('自動読み込み実行');
-                    loadFromCloud();
-                } else {
-                    console.log('Firebase未接続');
-                    document.getElementById('statusText').textContent = 'Firebase設定が必要';
-                }
-            }, 3000);
+      document.getElementById('saveBtn').disabled = true;
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('success').style.display = 'none';
+
+      try {
+        // 1. ImgBBに画像をアップロード
+        const formData = new FormData();
+        formData.append('image', generatedImageBase64);
+        const monsterName = document.getElementById('monsterName').value || 'yokai';
+        formData.append('name', monsterName);
+
+        const imgbbResponse = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+          method: 'POST',
+          body: formData
         });
 
-        console.log('✨ ばけばけ展示館（Firebase版）起動完了 ✨');
-    </script>
+        if (!imgbbResponse.ok) {
+          const errorData = await imgbbResponse.json().catch(() => ({}));
+          throw new Error(errorData.error?.message || 'ImgBBへの保存に失敗しました');
+        }
+
+        const imgbbData = await imgbbResponse.json();
+        if (!imgbbData.success || !imgbbData.data) {
+          throw new Error('ImgBBへの保存に失敗しました');
+        }
+
+        const imageUrl = imgbbData.data.display_url || imgbbData.data.url;
+
+        // 2. FirebaseにURLを保存
+        const monstersRef = window.firebaseRef(window.firebaseDB, 'monsters');
+        const newMonsterRef = window.firebasePush(monstersRef);
+        await window.firebaseSet(newMonsterRef, {
+          url: imageUrl,
+          name: monsterName,
+          timestamp: new Date().toISOString(),
+          fidelity: currentFidelity
+        });
+
+        showSuccess(`✅ 展示館に保存されました！`);
+      } catch (err) {
+        showError('保存エラー: ' + err.message);
+      } finally {
+        document.getElementById('saveBtn').disabled = false;
+      }
+    }
+
+    console.log('✨ ばけばけ召喚装置（Firebase版）起動完了 ✨');
+  </script>
 </body>
 </html>
